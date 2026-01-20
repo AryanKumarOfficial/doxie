@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
             }, {status: 409})
         }
 
-        console.log(error);
+        console.log(err);
         return NextResponse.json({
             error: `Internal Server Error`
         }, {
