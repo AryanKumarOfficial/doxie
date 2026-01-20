@@ -2,7 +2,7 @@ import {NextRequest, NextResponse} from 'next/server';
 import {registerSchema} from "@/schema/register";
 import {registerUser} from "@/services/auth.service";
 import {ZodError} from "zod";
-import {Prisma} from "@/generated/prisma";
+import {Prisma} from "@/generated/prisma/client";
 
 export async function POST(req: NextRequest) {
     try {
@@ -10,13 +10,13 @@ export async function POST(req: NextRequest) {
         const parsed = registerSchema.parse(json);
         const user = await registerUser(parsed);
         return NextResponse.json({
-            id: user.id, email: user.email, name: user.name
+            id: user?.id, email: user?.email, name: user?.name
         }, {status: 201});
     } catch (err) {
         if (err instanceof ZodError) {
             return NextResponse.json({
                 error: `Validation Failed`,
-                issues: err.errors
+                issues: err.issues
             }, {status: 400})
         }
 

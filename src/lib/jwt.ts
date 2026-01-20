@@ -1,14 +1,14 @@
-import jwt from 'jsonwebtoken';
-import env from './env';
+import jwt, {JwtPayload, SignOptions} from 'jsonwebtoken';
+import {env} from './env';
 
-export function signAccess(payload: object) {
+export function signAccess(payload: JwtPayload) {
     return jwt.sign(payload, env.JWT_PRIVATE_KEY, {
-        expiresIn: env.JWT_EXPIRES_IN
+        expiresIn: env.JWT_EXPIRES_IN as SignOptions['expiresIn']
     })
 }
 
-export function signRefresh(payload: object) {
-    return jwt.sign(payload, env.JWT_REFRESH_SECRET, {expiresIn: env.JWT_REFRESH_EXPIRES_IN});
+export function signRefresh(payload: JwtPayload) {
+    return jwt.sign(payload, env.JWT_REFRESH_SECRET, {expiresIn: env.JWT_REFRESH_EXPIRES_IN as SignOptions['expiresIn']});
 }
 
 export function verifyAccess(token: string) {
