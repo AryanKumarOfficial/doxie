@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  name      String?
+  createdAt DateTime  @default(now())
+  lastSeen  DateTime?
+
+  memberships Membership[]
+  documents   Document[]   @relation("DocOwner")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  members   Membership[]
+  documents Document[]
+}
+
+model Membership {
+  id     String @id @default(uuid())
+  role   Role   @default(MEMBER)
+  userId String
+  orgId  String
+
+  user User         @relation(fields: [userId], references: [id])
+  org  Organization @relation(fields: [orgId], references: [id])
+
+  @@unique([userId, orgId])
+}
+
+model Document {
+  id        String   @id @default(uuid())
+  title     String
+  orgId     String
+  ownerId   String
+  type      String   @default("doc")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  metadata  Json?
+
+  org       Organization       @relation(fields: [orgId], references: [id])
+  owner     User               @relation("DocOwner", fields: [ownerId], references: [id])
+  revisions DocumentRevision[]
+}
+
+model DocumentRevision {
+  id         String   @id @default(uuid())
+  documentId String
+  createdBy  String?
+  createdAt  DateTime @default(now())
+  snapshot   Json
+  summary    String?
+
+  document Document @relation(fields: [documentId], references: [id])
+}
+
+model ApiKey {
+  id        String   @id @default(uuid())
+  orgId     String
+  key       String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
