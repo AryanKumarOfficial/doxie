@@ -15,5 +15,7 @@ ENV NODE_ENV production
 COPY --from=builder /app/apps/admin/.next/standalone ./
 COPY --from=builder /app/apps/admin/.next/static ./apps/admin/.next/static
 
+# Run the admin app as a non-root user for least privilege
+USER node
 EXPOSE 3001
 CMD ["node", "apps/admin/server.js"]
