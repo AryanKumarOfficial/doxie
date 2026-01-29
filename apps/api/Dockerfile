@@ -7,7 +7,7 @@ COPY . .
 # For now, I'll create a simple Dockerfile assuming independent build or appropriate context usage.
 
 # This is a placeholder for a production build
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.12.1
 COPY package.json pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/
 COPY packages/db/package.json packages/db/

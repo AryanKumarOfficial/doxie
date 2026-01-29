@@ -1,6 +1,6 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10.12.1
 COPY . .
 RUN pnpm install
 RUN pnpm --filter @doxie/db db:generate
