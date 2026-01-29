@@ -19,5 +19,9 @@ RUN pnpm --filter @doxie/db db:generate
 COPY apps/api apps/api
 RUN pnpm --filter @doxie/api build
 
+# Create an unprivileged user to run the API
+RUN addgroup -S app && adduser -S app -G app
+RUN chown -R app:app /app
+USER app
 EXPOSE 4000
 CMD ["node", "apps/api/dist/server.js"]
