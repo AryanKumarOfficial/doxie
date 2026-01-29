@@ -3,6 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-doxie}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
@@ -14,6 +15,7 @@ services:
 
   mongo:
     image: mongo:6-jammy
+    restart: always
     expose:
       - "27017"
     volumes:
@@ -21,6 +23,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: always
     expose:
       - "6379"
 
@@ -28,6 +31,7 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
     ports:
       - "4000:4000"
     environment:
@@ -44,6 +48,7 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         MONGODB_URI: ${MONGODB_URI}
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -60,6 +65,7 @@ services:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
+    restart: unless-stopped
     ports:
       - "3001:3001"
     environment:
