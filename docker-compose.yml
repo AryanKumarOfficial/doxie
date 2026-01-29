@@ -63,6 +63,7 @@ services:
     ports:
       - "3001:3001"
     environment:
+      PORT: 3001
       DATABASE_URL: postgres://${POSTGRES_USER:-doxie}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-doxie_db}
       NEXTAUTH_URL: ${NEXTAUTH_URL_ADMIN:-http://localhost:3001}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-changeme}
