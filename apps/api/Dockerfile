@@ -7,7 +7,7 @@ COPY . .
 # For now, I'll create a simple Dockerfile assuming independent build or appropriate context usage.
 
 # This is a placeholder for a production build
-RUN npm install -g pnpm@10.12.1
+RUN npm install -g pnpm
 COPY package.json pnpm-workspace.yaml ./
 COPY apps/api/package.json apps/api/
 COPY packages/db/package.json packages/db/
@@ -19,9 +19,5 @@ RUN pnpm --filter @doxie/db db:generate
 COPY apps/api apps/api
 RUN pnpm --filter @doxie/api build
 
-# Create an unprivileged user to run the API
-RUN addgroup -S app && adduser -S app -G app
-RUN chown -R app:app /app
-USER app
 EXPOSE 4000
 CMD ["node", "apps/api/dist/server.js"]
