@@ -11,7 +11,7 @@ export interface INote extends Document {
     isPinned: boolean;
     isFavorite: boolean;
     editorType: 'rich' | 'markdown' | 'simple';
-    userId: Types.ObjectId;
+    userId: string; // Changed to string for Postgres compatibility
     isPublic: boolean;
     sharedWith: string[];
     lastAccessed: Date;
@@ -75,8 +75,7 @@ const noteSchema = new Schema<INote>(
             default: 'rich'
         },
         userId: {
-            type: Schema.Types.ObjectId,
-            ref: 'User',
+            type: String, // Changed to String to store Postgres CUID
             required: [true, 'User ID is required'],
             index: true
         },

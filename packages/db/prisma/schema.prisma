@@ -1,0 +1,172 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Auth & User
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  accounts      Account[]
+  sessions      Session[]
+
+  // Relations
+  memberships   Member[]
+  notes         Note[]
+
+  // AI
+  aiJobs        AIJob[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// NextAuth models
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Tenancy
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+
+  members     Member[]
+  workspaces  Workspace[]
+  subscription Subscription?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Member {
+  id             String       @id @default(cuid())
+  role           Role         @default(VIEWER)
+  userId         String
+  organizationId String
+
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  ORG_OWNER
+  USER
+  VIEWER
+}
+
+model Workspace {
+  id             String       @id @default(cuid())
+  name           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  projects       Project[]
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  notes       Note[]
+}
+
+// Core App (Notes)
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  content     String?  @db.Text
+  tags        String[]
+  folder      String?
+  color       String?
+  isPinned    Boolean  @default(false)
+  isFavorite  Boolean  @default(false)
+  editorType  String   @default("rich")
+  isPublic    Boolean  @default(false)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id])
+
+  // Sharing
+  sharedWith  String[] // Simple array of emails for now, could be relation
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// Billing
+model Subscription {
+  id             String       @id @default(cuid())
+  stripeId       String       @unique
+  status         String
+  plan           String       // Free, Pro, Team, Enterprise
+  organizationId String       @unique
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  currentPeriodEnd DateTime
+}
+
+model Invoice {
+  id        String   @id @default(cuid())
+  stripeId  String   @unique
+  amount    Int
+  status    String
+  createdAt DateTime @default(now())
+}
+
+// AI
+model AIJob {
+  id        String   @id @default(cuid())
+  type      String   // enrichment, summary, etc.
+  status    String   // pending, processing, completed, failed
+  input     Json
+  output    Json?
+  cost      Float?
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
