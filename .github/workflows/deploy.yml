@@ -1,0 +1,62 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # -------------------------------
+      # Secure SCP (Copy files)
+      # -------------------------------
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "."
+          target: "/home/ubuntu/doxie"
+          rm: true # Cleans the target folder before copying to prevent conflicts
+
+      # -------------------------------
+      # Remote SSH (Build & Run)
+      # -------------------------------
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e  # Fail immediately if any command errors
+
+            cd /home/ubuntu/doxie
+
+            echo "🔐 Writing environment variables..."
+            # Using 'EOF' prevents variable expansion during the write
+            cat << 'EOF' > .env
+            ${{ secrets.ENV_FILE }}
+            EOF
+
+            echo "🛑 Stopping existing containers..."
+            docker compose down || true
+
+            echo "🐳 Building containers..."
+            # Forces a rebuild to ensure changes to Dockerfiles are picked up
+            docker compose build
+
+            echo "🚀 Starting containers..."
+            docker compose up -d
+
+            echo "🧹 Cleaning unused images..."
+            docker image prune -af
+
+            echo "✅ Deployment completed successfully"
