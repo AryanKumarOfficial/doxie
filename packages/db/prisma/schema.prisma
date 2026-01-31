@@ -24,6 +24,8 @@ model User {
 
   // AI
   aiJobs        AIJob[]
+  aiUsages      AIUsage[]
+  auditLogs     AuditLog[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -72,6 +74,13 @@ model Organization {
   members     Member[]
   workspaces  Workspace[]
   subscription Subscription?
+
+  // SaaS Features
+  apiKeys       APIKey[]
+  auditLogs     AuditLog[]
+  integrations  Integration[]
+  usages        Usage[]
+  aiUsages      AIUsage[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -142,20 +151,59 @@ model Note {
 // Billing
 model Subscription {
   id             String       @id @default(cuid())
-  stripeId       String       @unique
-  status         String
-  plan           String       // Free, Pro, Team, Enterprise
   organizationId String       @unique
   organization   Organization @relation(fields: [organizationId], references: [id])
-  currentPeriodEnd DateTime
+
+  // Stripe Data
+  stripeCustomerId     String?
+  stripeSubscriptionId String? @unique
+  stripePriceId        String?
+
+  status         SubscriptionStatus
+  plan           String       // Free, Pro, Team, Enterprise (Plan ID or Name)
+
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean  @default(false)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  PAST_DUE
+  TRIALING
+  UNPAID
+  PAUSED
 }
 
 model Invoice {
-  id        String   @id @default(cuid())
-  stripeId  String   @unique
-  amount    Int
-  status    String
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  stripeId       String   @unique
+  amount         Int
+  currency       String   @default("usd")
+  status         String
+  periodStart    DateTime
+  periodEnd      DateTime
+  customerId     String
+  subscriptionId String?
+  createdAt      DateTime @default(now())
+}
+
+model Usage {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  feature        String
+  amount         Int
+  periodStart    DateTime
+  periodEnd      DateTime
+
+  @@index([organizationId, feature, periodStart, periodEnd])
 }
 
 // AI
@@ -166,7 +214,96 @@ model AIJob {
   input     Json
   output    Json?
   cost      Float?
+
   userId    String?
   user      User?    @relation(fields: [userId], references: [id])
+
+  aiUsages  AIUsage[]
+
   createdAt DateTime @default(now())
+}
+
+model AIUsage {
+  id             String       @id @default(cuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  provider       String       // "openai", "gemini"
+  model          String       // "gpt-4", "gemini-pro"
+  inputTokens    Int
+  outputTokens   Int
+  totalTokens    Int
+  cost           Float
+
+  jobId          String?
+  aiJob          AIJob?       @relation(fields: [jobId], references: [id])
+
+  createdAt      DateTime     @default(now())
+}
+
+// Platform Features
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  description String?
+  isEnabled   Boolean  @default(false)
+  rules       Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model APIKey {
+  id             String       @id @default(cuid())
+  name           String
+  key            String       @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime     @default(now())
+  scopes         String[]
+}
+
+model AuditLog {
+  id             String       @id @default(cuid())
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id])
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  action         String
+  entityType     String
+  entityId       String
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  createdAt      DateTime     @default(now())
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  source    String
+  externalId String  @unique
+  type      String
+  data      Json
+  status    String
+  error     String?
+  createdAt DateTime @default(now())
+  processedAt DateTime?
+}
+
+model Integration {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  provider       String       // "slack", "github"
+  accessToken    String?
+  refreshToken   String?
+  expiresAt      DateTime?
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, provider])
 }
