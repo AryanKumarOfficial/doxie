@@ -23,6 +23,6 @@ export class UsageService {
       },
     });
 
-    return usages.reduce((acc, curr) => acc + curr.amount, 0);
+    return usages.reduce((acc: number, curr: any) => acc + curr.amount, 0);
   }
 }
