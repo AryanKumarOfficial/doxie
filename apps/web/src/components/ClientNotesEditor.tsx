@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { FrontendNote } from "@/app/notes/[id]/page";
+// import { FrontendNote } from "@/app/notes/[id]/page";
 
 // Dynamic import with ssr: false (allowed in client components)
 const NotesEditor = dynamic(() => import("@/components/NotesEditor"), { ssr: false });
