@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import healthRoutes from './routes/health';
 import billingRoutes from './routes/billing';
 import aiRoutes from './routes/ai';
+import notesRoutes from './routes/notes';
+import { requireAuth } from './middleware/auth';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -23,8 +25,11 @@ app.use((req, res, next) => {
 });
 
 app.use('/health', healthRoutes);
-app.use('/billing', billingRoutes);
-app.use('/ai', aiRoutes);
+app.use('/billing', billingRoutes); // Billing handles its own auth (webhook is public)
+
+// Protected Routes
+app.use('/ai', requireAuth, aiRoutes);
+app.use('/notes', requireAuth, notesRoutes);
 
 app.get('/', (req, res) => {
   res.send('Doxie API is running');
