@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import mongoose from "mongoose";
-import connectToDatabase from "@/lib/mongodb";
 import { authOptions } from "@/lib/auth";
-import Note from "@/models/Note";
-
-// Helper to validate MongoDB ID
-function isValidMongoId(id: string): boolean {
-    return mongoose.Types.ObjectId.isValid(id);
-}
+import { prisma } from "@doxie/db";
 
 // Get a specific note by ID
 export async function GET(
@@ -26,24 +19,16 @@ export async function GET(
 
         const { id } = await params;
 
-        // Validate ID format
-        if (!isValidMongoId(id)) {
-            return NextResponse.json(
-                { error: "Invalid note ID format" },
-                { status: 400 }
-            );
-        }
-
-        await connectToDatabase();
-
-        const note = await Note.findOne({
-            _id: id,
-            $or: [
-                { userId: session.user.id },
-                { isPublic: true },
-                { sharedWith: { $elemMatch: { $eq: session.user.email } } }
-            ]
-        }).lean();
+        const note = await prisma.note.findFirst({
+            where: {
+                id: id,
+                OR: [
+                    { userId: session.user.id },
+                    { isPublic: true },
+                    { sharedWith: { has: session.user.email } } // Assuming sharedWith contains emails
+                ]
+            }
+        });
 
         if (!note) {
             return NextResponse.json(
@@ -51,11 +36,6 @@ export async function GET(
                 { status: 404 }
             );
         }
-
-        // Update lastAccessed timestamp without waiting for completion
-        Note.findByIdAndUpdate(id, { lastAccessed: new Date() }).catch(err => {
-            console.error("Error updating lastAccessed timestamp:", err);
-        });
 
         return NextResponse.json({
             data: note,
@@ -86,14 +66,6 @@ export async function PUT(
 
         const { id } = await params;
 
-        // Validate ID format
-        if (!isValidMongoId(id)) {
-            return NextResponse.json(
-                { error: "Invalid note ID format" },
-                { status: 400 }
-            );
-        }
-
         // Parse body with error handling
         let body;
         try {
@@ -105,15 +77,15 @@ export async function PUT(
             );
         }
 
-        await connectToDatabase();
-
         // Only allow updating own notes
-        const note = await Note.findOne({
-            _id: id,
-            userId: session.user.id
+        const existingNote = await prisma.note.findFirst({
+            where: {
+                id: id,
+                userId: session.user.id
+            }
         });
 
-        if (!note) {
+        if (!existingNote) {
             return NextResponse.json(
                 { error: "Note not found or you don't have permission to edit it" },
                 { status: 404 }
@@ -129,20 +101,20 @@ export async function PUT(
         }
 
         // Sanitize and prepare update data
-        const updateData = {
-            ...body,
-            lastAccessed: new Date(),
-            updatedAt: new Date()
+        const updateData: any = {
+            ...body
         };
 
         // Prevent changing userId - security measure
         delete updateData.userId;
+        delete updateData.id;
+        delete updateData.createdAt;
+        delete updateData.updatedAt;
 
-        const updatedNote = await Note.findByIdAndUpdate(
-            id,
-            updateData,
-            { new: true, runValidators: true }
-        ).lean();
+        const updatedNote = await prisma.note.update({
+            where: { id },
+            data: updateData
+        });
 
         return NextResponse.json({
             data: updatedNote,
@@ -150,21 +122,6 @@ export async function PUT(
         });
     } catch (error: any) {
         console.error("Error updating note:", error);
-
-        // Different responses based on error type
-        if (error.name === 'ValidationError') {
-            return NextResponse.json(
-                { error: "Invalid note data: " + error.message },
-                { status: 400 }
-            );
-        }
-
-        if (error.name === 'CastError') {
-            return NextResponse.json(
-                { error: "Invalid data format" },
-                { status: 400 }
-            );
-        }
 
         return NextResponse.json(
             { error: "Failed to update note" },
@@ -187,22 +144,14 @@ export async function DELETE(
             );
         }
 
-        const { id } =await params;
-
-        // Validate ID format
-        if (!isValidMongoId(id)) {
-            return NextResponse.json(
-                { error: "Invalid note ID format" },
-                { status: 400 }
-            );
-        }
-
-        await connectToDatabase();
+        const { id } = await params;
 
         // Only allow deleting own notes
-        const note = await Note.findOne({
-            _id: id,
-            userId: session.user.id
+        const note = await prisma.note.findFirst({
+            where: {
+                id: id,
+                userId: session.user.id
+            }
         });
 
         if (!note) {
@@ -212,7 +161,9 @@ export async function DELETE(
             );
         }
 
-        await Note.findByIdAndDelete(id);
+        await prisma.note.delete({
+            where: { id }
+        });
 
         return NextResponse.json({
             success: true,

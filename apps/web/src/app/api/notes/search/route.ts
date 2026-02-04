@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import connectToDatabase from "@/lib/mongodb";
-import Note from "@/models/Note";
+import { prisma, Prisma } from "@doxie/db";
 
 export async function GET(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || !session.user) {
+        if (!session || !session.user || !session.user.id) {
             return NextResponse.json(
                 { error: "Not authenticated" },
                 { status: 401 }
@@ -24,71 +23,78 @@ export async function GET(req: NextRequest) {
         const isFavorite = url.searchParams.get("isFavorite") === "true" ? true : undefined;
         const isPinned = url.searchParams.get("isPinned") === "true" ? true : undefined;
         const isPublic = url.searchParams.get("isPublic") === "true" ? true : undefined;
-        const hasShares = url.searchParams.get("hasShares") === "true";
+        // const hasShares = url.searchParams.get("hasShares") === "true";
         const limit = url.searchParams.get("limit") ? parseInt(url.searchParams.get("limit")!) : 20;
         const skip = url.searchParams.get("skip") ? parseInt(url.searchParams.get("skip")!) : 0;
-        const sort = url.searchParams.get("sort") || "-updatedAt"; // Default sort by updatedAt desc
+        const sortParam = url.searchParams.get("sort") || "-updatedAt";
 
-        await connectToDatabase();
+        let sortField = sortParam.startsWith("-")
+            ? sortParam.substring(1)
+            : sortParam;
+        const sortOrder = sortParam.startsWith("-") ? 'desc' : 'asc';
+        if (sortField === 'lastAccessed') sortField = 'updatedAt';
 
         // If we only need to return tags, get distinct tags for the user
         if (tagsOnly) {
-            const tags = await Note.distinct("tags", { 
-                userId: session.user.id,
-                tags: { $exists: true, $ne: [] }
+            // Prisma doesn't support distinct on scalar lists directly like MongoDB
+            // We fetch all tags and deduplicate in memory
+            const notes = await prisma.note.findMany({
+                where: { userId: session.user.id },
+                select: { tags: true }
             });
             
-            return NextResponse.json({ tags });
+            const allTags = notes.flatMap(n => n.tags);
+            const distinctTags = Array.from(new Set(allTags));
+
+            return NextResponse.json({ tags: distinctTags });
         }
 
         // Build the search query
-        const searchQuery: any = { userId: session.user.id };
+        const where: Prisma.NoteWhereInput = { userId: session.user.id };
 
         // Add filter conditions based on parameters
         if (query) {
-            searchQuery.$or = [
-                { title: { $regex: query, $options: 'i' } },
-                { content: { $regex: query, $options: 'i' } },
-                { tags: { $regex: query, $options: 'i' } }
+            where.OR = [
+                { title: { contains: query, mode: 'insensitive' } },
+                { content: { contains: query, mode: 'insensitive' } },
+                // { tags: { has: query } } // Exact match on element, not regex partial
             ];
         }
 
         if (tag) {
-            searchQuery.tags = tag;
+            where.tags = { has: tag };
         }
 
         if (folder) {
-            searchQuery.folder = folder;
+            where.folder = folder;
         }
 
         if (editorType) {
-            searchQuery.editorType = editorType;
+            where.editorType = editorType;
         }
 
         if (isFavorite !== undefined) {
-            searchQuery.isFavorite = isFavorite;
+            where.isFavorite = isFavorite;
         }
 
         if (isPinned !== undefined) {
-            searchQuery.isPinned = isPinned;
+            where.isPinned = isPinned;
         }
 
         if (isPublic !== undefined) {
-            searchQuery.isPublic = isPublic;
-        }
-
-        if (hasShares) {
-            searchQuery.sharedWith = { $exists: true, $ne: [] };
+            where.isPublic = isPublic;
         }
 
         // Execute the search
-        const notes = await Note.find(searchQuery)
-            .sort(sort)
-            .skip(skip)
-            .limit(limit)
-            .lean();
-
-        const total = await Note.countDocuments(searchQuery);
+        const [notes, total] = await Promise.all([
+            prisma.note.findMany({
+                where,
+                take: limit,
+                skip: skip,
+                orderBy: { [sortField]: sortOrder }
+            }),
+            prisma.note.count({ where })
+        ]);
 
         return NextResponse.json({
             notes,

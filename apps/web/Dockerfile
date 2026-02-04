@@ -26,7 +26,6 @@ RUN pnpm --filter @doxie/db db:generate
 # === FIX STARTS HERE ===
 # We provide dummy values so "next build" doesn't crash validation.
 # These will be overwritten by the real .env values at runtime.
-ENV MONGODB_URI="mongodb://localhost:27017/build_dummy"
 ENV NEXTAUTH_SECRET="build_dummy_secret"
 ENV NEXTAUTH_URL="http://localhost:3000"
 # =======================

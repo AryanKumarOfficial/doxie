@@ -2,33 +2,13 @@ import { getServerSession } from "next-auth";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import connectToDatabase from "@/lib/mongodb";
-import Note from "@/models/Note";
+import { prisma } from "@doxie/db";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { FiArrowLeft } from "react-icons/fi";
 import ClientNotesEditor from "@/components/ClientNotesEditor";
 import type { Metadata, ResolvingMetadata } from 'next';
-
-// Define a frontend-friendly note type without Mongoose methods
-export type FrontendNote = {
-    id: string;
-    _id: string;
-    title: string;
-    content: string;
-    tags: string[];
-    folder: string;
-    color: string;
-    isPinned: boolean;
-    isFavorite: boolean;
-    editorType: 'rich' | 'markdown' | 'simple';
-    userId: string;
-    isPublic: boolean;
-    sharedWith: string[];
-    lastAccessed: Date;
-    updatedAt: Date;
-    createdAt: Date;
-};
+import { FrontendNote } from "@/types/note";
 
 // Dynamic metadata generation based on the note data
 export async function generateMetadata(
@@ -51,14 +31,15 @@ export async function generateMetadata(
   }
   
   try {
-    await connectToDatabase();
-    const note = await Note.findOne({ 
-      _id: id,
-      $or: [
-        { userId: session.user.id },
-        { isPublic: true },
-        { sharedWith: session.user.email }
-      ] 
+    const note = await prisma.note.findFirst({
+        where: {
+            id: id,
+            OR: [
+                { userId: session.user.id },
+                { isPublic: true },
+                { sharedWith: { has: session.user.email } }
+            ]
+        }
     });
     
     if (!note) {
@@ -70,7 +51,7 @@ export async function generateMetadata(
     }
     
     // Generate a clean description from the note content
-    let description = note.content
+    let description = (note.content || "")
       .replace(/<[^>]*>/g, '') // Remove HTML tags
       .slice(0, 155); // Limit to 155 chars
     
@@ -121,17 +102,17 @@ export default async function NotePage({ params }: NotePageProps) {
         redirect("/login");
     }
 
-    await connectToDatabase();
-
     // Check if the user has access to this note
-    const noteDoc = await Note.findOne({
-        _id: id,
-        $or: [
-            { userId: session.user.id },
-            { isPublic: true },
-            { sharedWith: session.user.email } // Use email for sharedWith
-        ]
-    }).lean();
+    const noteDoc = await prisma.note.findFirst({
+        where: {
+            id: id,
+            OR: [
+                { userId: session.user.id },
+                { isPublic: true },
+                { sharedWith: { has: session.user.email } }
+            ]
+        }
+    });
 
     if (!noteDoc) {
         notFound();
@@ -139,26 +120,26 @@ export default async function NotePage({ params }: NotePageProps) {
 
     // Convert to frontend-safe note object
     const note: FrontendNote = {
-        _id: noteDoc._id.toString(),
-        id: noteDoc._id.toString(),
+        _id: noteDoc.id, // Map id to _id
+        id: noteDoc.id,
         title: noteDoc.title || '',
         content: noteDoc.content || '',
-        tags: Array.isArray(noteDoc.tags) ? noteDoc.tags : [],
+        tags: noteDoc.tags,
         folder: noteDoc.folder || 'Default',
         color: noteDoc.color || '#ffffff',
-        isPinned: Boolean(noteDoc.isPinned),
-        isFavorite: Boolean(noteDoc.isFavorite),
-        editorType: noteDoc.editorType || 'rich',
-        userId: noteDoc.userId.toString(),
-        isPublic: Boolean(noteDoc.isPublic),
-        sharedWith: Array.isArray(noteDoc.sharedWith) ? noteDoc.sharedWith : [],
-        lastAccessed: noteDoc.lastAccessed || new Date(),
+        isPinned: noteDoc.isPinned,
+        isFavorite: noteDoc.isFavorite,
+        editorType: (noteDoc.editorType as 'rich' | 'markdown' | 'simple') || 'rich',
+        userId: noteDoc.userId,
+        isPublic: noteDoc.isPublic,
+        sharedWith: noteDoc.sharedWith,
+        lastAccessed: new Date(), // Not in DB yet
         updatedAt: noteDoc.updatedAt || new Date(),
         createdAt: noteDoc.createdAt || new Date()
     };
 
-    // Update last accessed time
-    await Note.findByIdAndUpdate(id, { lastAccessed: new Date() });
+    // Update last accessed time - NOT Supported in schema yet, skipping
+    // await prisma.note.update({ where: { id }, data: { lastAccessed: new Date() } });
 
     const isOwner = note.userId === session.user.id;
 

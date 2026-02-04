@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import connectToDatabase from "@/lib/mongodb";
-import Note from "@/models/Note";
+import { prisma } from "@doxie/db";
 
 async function requireAuth() {
     const session = await getServerSession(authOptions);
@@ -15,9 +14,19 @@ async function requireAuth() {
 export async function GET(req: NextRequest) {
     try {
         const userId = await requireAuth();
-        await connectToDatabase();
-        const folders = await Note.distinct<string>("folder", { userId });
-        return NextResponse.json({ folders });
+
+        const folders = await prisma.note.findMany({
+            where: { userId },
+            distinct: ['folder'],
+            select: { folder: true }
+        });
+
+        // Map to string array and filter nulls
+        const folderNames = folders
+            .map(f => f.folder)
+            .filter((f): f is string => f !== null);
+
+        return NextResponse.json({ folders: folderNames });
     } catch (err: any) {
         return NextResponse.json(
             { error: err.message || "Failed to fetch folders" },
@@ -34,8 +43,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Folder name is required" }, { status: 400 });
         }
 
-        await connectToDatabase();
-        const exists = await Note.exists({ folder: name, userId });
+        const exists = await prisma.note.findFirst({
+            where: { folder: name, userId }
+        });
+
         if (exists) {
             return NextResponse.json(
                 { success: false, message: `Folder "${name}" already exists` },
@@ -43,14 +54,15 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const note = new Note({
-            title: `${name} - Getting Started`,
-            content: `Welcome to "${name}". This is your first note in this folder.`,
-            folder: name,
-            userId,
-            editorType: "rich",
+        await prisma.note.create({
+            data: {
+                title: `${name} - Getting Started`,
+                content: `Welcome to "${name}". This is your first note in this folder.`,
+                folder: name,
+                userId,
+                editorType: "rich",
+            }
         });
-        await note.save();
 
         return NextResponse.json(
             { success: true, folderName: name, message: "Folder created successfully" },
@@ -75,7 +87,6 @@ export async function PUT(req: NextRequest) {
             );
         }
 
-        await connectToDatabase();
         if (oldName === newName) {
             return NextResponse.json(
                 { success: false, message: "Old and new folder names are the same" },
@@ -84,7 +95,10 @@ export async function PUT(req: NextRequest) {
         }
 
         // Check if the target newName already exists
-        const conflict = await Note.exists({ folder: newName, userId });
+        const conflict = await prisma.note.findFirst({
+            where: { folder: newName, userId }
+        });
+
         if (conflict) {
             return NextResponse.json(
                 { success: false, message: `Folder "${newName}" already exists` },
@@ -92,15 +106,15 @@ export async function PUT(req: NextRequest) {
             );
         }
 
-        const result = await Note.updateMany(
-            { folder: oldName, userId },
-            { $set: { folder: newName } }
-        );
+        const result = await prisma.note.updateMany({
+            where: { folder: oldName, userId },
+            data: { folder: newName }
+        });
 
         return NextResponse.json({
             success: true,
             message: `Folder renamed from "${oldName}" to "${newName}"`,
-            modifiedCount: result.modifiedCount,
+            modifiedCount: result.count,
             deletedCount: 0,
         });
     } catch (err: any) {
@@ -122,20 +136,20 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ error: "Folder name is required" }, { status: 400 });
         }
 
-        await connectToDatabase();
-
         let modifiedCount = 0;
         let deletedCount = 0;
 
         if (deleteNotes) {
-            const res = await Note.deleteMany({ folder: name, userId });
-            deletedCount = res.deletedCount ?? 0;
+            const res = await prisma.note.deleteMany({
+                where: { folder: name, userId }
+            });
+            deletedCount = res.count;
         } else {
-            const res = await Note.updateMany(
-                { folder: name, userId },
-                { $set: { folder: "Default" } }
-            );
-            modifiedCount = res.modifiedCount;
+            const res = await prisma.note.updateMany({
+                where: { folder: name, userId },
+                data: { folder: "Default" }
+            });
+            modifiedCount = res.count;
         }
 
         return NextResponse.json({

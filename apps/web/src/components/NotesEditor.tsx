@@ -7,7 +7,7 @@ import MarkdownEditor from "./MarkdownEditor";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Separator } from "./ui/separator";
-import { INote } from "@/models/Note";
+import { INote } from "@/types/note";
 import { FiSave, FiTag, FiShare2, FiTrash2, FiStar, FiPaperclip, FiEye, FiEdit, FiX, FiDroplet } from "react-icons/fi";
 import { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +15,6 @@ import { Dialog } from "@/components/ui/dialog";
 import ReactMarkdown from "react-markdown";
 import { showToast } from "@/lib/utils";
 import { useNotesStore } from "@/store/notesStore";
-import { Types } from "mongoose";
 
 interface NotesEditorProps {
   note?: INote;
@@ -78,8 +77,7 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
   // Get the note ID - could be either id or _id depending on how MongoDB data is processed
   const getNoteId = () => {
     if (!note) return null;
-    const id = note._id || note.id;
-    return typeof id === 'string' ? id : id?.toString();
+    return note._id || note.id;
   };
 
   // Save the note
