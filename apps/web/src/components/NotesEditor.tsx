@@ -75,9 +75,10 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
   }, []);
 
   // Get the note ID
-  const getNoteId = () => {
-    return note?.id;
-  };
+const getNoteId = () => {
+  return note?.id ?? null;
+};
+
 
   // Save the note
   const saveNote = async () => {

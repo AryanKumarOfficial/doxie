@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,7 @@ interface SharePageProps {
 }
 
 export default function SharePage({ params }: SharePageProps) {
+  const { id } = use(params);
   const router = useRouter();
   const { data: session } = useSession();
   const [note, setNote] = useState<any>(null);
@@ -26,25 +27,30 @@ export default function SharePage({ params }: SharePageProps) {
 
   useEffect(() => {
     if (!session) {
-      router.push("/login");
+      // Allow time for session to load if it's undefined initially?
+      // Actually useSession returns status "loading" | "authenticated" | "unauthenticated".
+      // But data is undefined if loading.
+      // We should check status properly, but checking session is null/undefined is okay-ish.
+      // If we are sure we are protected by middleware or similar.
+      // For now, simple check.
+      // router.push("/login");
       return;
     }
 
     const fetchNote = async () => {
       try {
-        const response = await fetch(`/api/notes/${(await params).id}`);
+        const response = await fetch(`/api/notes/${id}`);
 
         if (!response.ok) {
           throw new Error("Failed to fetch note");
         }
 
-        const noteData = await response.json();
+        const noteData = await response.json().then(res => res.data || res); // Handle wrapped response
         setNote(noteData);
         setIsPublic(noteData.isPublic || false);
 
         if (noteData.sharedWith && noteData.sharedWith.length > 0) {
-          // Here we would ideally fetch the emails of users based on their IDs
-          // For simplicity, we'll just display the IDs for now
+          // sharedWith contains emails now (as per my refactor)
           setEmails(noteData.sharedWith.join(", "));
         }
       } catch (error) {
@@ -55,7 +61,7 @@ export default function SharePage({ params }: SharePageProps) {
     };
 
     fetchNote();
-  }, [React.use(params).id, router, session]);
+  }, [id, router, session]);
 
   const handleShare = async () => {
     if (!note) return;

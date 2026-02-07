@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
 
-        if (!session || !session.user) {
+        if (!session || !session.user || !session.user.id) {
             return NextResponse.json(
                 { error: "Not authenticated" },
                 { status: 401 }
@@ -25,6 +25,7 @@ export async function GET(req: NextRequest) {
 
         // Convert to a more usable format
         const counts: Record<string, number> = {};
+
         folderCounts.forEach((item) => {
             if (item.folder) {
                 counts[item.folder] = item._count._all;
