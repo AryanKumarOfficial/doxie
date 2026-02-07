@@ -1,22 +1,41 @@
 import { Router } from 'express';
 import { AIService } from '../modules/ai/service';
 import { isAuthenticated } from '../middleware/auth';
+import { authenticateJWT } from '../modules/auth/middleware';
+import { asyncHandler } from '../common/middleware';
 
 const router = Router();
 const aiService = new AIService();
 
-router.post('/generate', isAuthenticated, async (req, res) => {
-    try {
-        const { prompt, organizationId } = req.body;
-        // User ID from token
-        const userId = (req as any).user.sub || (req as any).user.id;
+router.use(authenticateJWT);
 
-        const text = await aiService.generateText(prompt, userId, organizationId);
-        res.json({ text });
-    } catch (e: any) {
-        console.error("AI Error:", e);
-        res.status(500).json({ error: e.message });
-    }
-});
+router.post(
+  '/generate',
+  asyncHandler(async (req, res) => {
+    const { prompt, organizationId, provider, model } = req.body;
+
+    // Support both Auth0-style sub and normal id
+    const userId = (req as any).user.sub || (req as any).user.id;
+
+    const result = await aiService.generateText(
+      prompt,
+      userId,
+      organizationId,
+      provider,
+      model
+    );
+
+    res.json(result);
+  })
+);
+
+router.get(
+  '/job/:id',
+  asyncHandler(async (req, res) => {
+    const result = await aiService.getJobStatus(req.params.id);
+    res.json(result);
+  })
+);
+
 
 export default router;
