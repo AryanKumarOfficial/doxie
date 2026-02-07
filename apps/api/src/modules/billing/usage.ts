@@ -1,4 +1,4 @@
-import { prisma } from '@doxie/db';
+import { prisma, Usage } from '@doxie/db';
 
 export class UsageService {
   async trackUsage(organizationId: string, feature: string, amount: number) {
@@ -23,6 +23,6 @@ export class UsageService {
       },
     });
 
-    return usages.reduce((acc: number, curr: any) => acc + curr.amount, 0);
+    return usages.reduce((acc: number, curr: Usage) => acc + curr.amount, 0);
   }
 }

@@ -3,11 +3,15 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+
 import healthRoutes from './routes/health';
 import billingRoutes from './routes/billing';
 import aiRoutes from './routes/ai';
+import notesRoutes from './routes/notes';
 import authRoutes from './routes/auth';
 import organizationRoutes from './routes/organizations';
+
+import { isAuthenticated } from './middleware/auth';
 import { errorHandler } from './common/middleware';
 import { env } from './config/env';
 
@@ -19,26 +23,29 @@ app.use(helmet());
 app.use(morgan('dev'));
 app.use(cookieParser());
 
-// Exclude webhook from global json parsing
+// Exclude Stripe webhook from global JSON parsing
 app.use((req, res, next) => {
   if (req.originalUrl.includes('/billing/webhook')) {
-    next();
-  } else {
-    express.json()(req, res, next);
+    return next();
   }
+  return express.json()(req, res, next);
 });
 
+// Routes
 app.use('/health', healthRoutes);
 app.use('/auth', authRoutes);
 app.use('/organizations', organizationRoutes);
-app.use('/billing', billingRoutes);
-app.use('/ai', aiRoutes);
+app.use('/billing', billingRoutes); // webhook must remain public
+
+// Protected Routes
+app.use('/ai', isAuthenticated, aiRoutes);
+app.use('/notes', isAuthenticated, notesRoutes);
 
 app.get('/', (req, res) => {
   res.send('Doxie API is running');
 });
 
-// Global Error Handler
+// Global Error Handler (must be last)
 app.use(errorHandler);
 
 if (require.main === module) {
