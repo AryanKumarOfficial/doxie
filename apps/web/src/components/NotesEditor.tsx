@@ -7,7 +7,7 @@ import MarkdownEditor from "./MarkdownEditor";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Separator } from "./ui/separator";
-import { INote } from "@/types/note";
+import { Note } from "@doxie/db";
 import { FiSave, FiTag, FiShare2, FiTrash2, FiStar, FiPaperclip, FiEye, FiEdit, FiX, FiDroplet } from "react-icons/fi";
 import { Toaster } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,7 +17,7 @@ import { showToast } from "@/lib/utils";
 import { useNotesStore } from "@/store/notesStore";
 
 interface NotesEditorProps {
-  note?: INote;
+  note?: Note;
   isNew?: boolean;
   readOnly?: boolean;
 }
@@ -30,7 +30,7 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
   const [title, setTitle] = useState(note?.title || "Untitled Note");
   const [content, setContent] = useState(note?.content || "");
   const [editorType, setEditorType] = useState<"rich" | "markdown" | "simple">(
-    note?.editorType as any || "rich"
+    (note?.editorType as any) || "rich"
   );
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -74,11 +74,11 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
     fetchFolders();
   }, []);
 
-  // Get the note ID - could be either id or _id depending on how MongoDB data is processed
-  const getNoteId = () => {
-    if (!note) return null;
-    return note._id || note.id;
-  };
+  // Get the note ID
+const getNoteId = () => {
+  return note?.id ?? null;
+};
+
 
   // Save the note
   const saveNote = async () => {
@@ -100,8 +100,7 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
         isPinned,
         isPublic,
         color,
-        updatedAt: new Date().toISOString(),
-        lastAccessed: new Date().toISOString()
+        // updatedAt handled by server/DB
       };
 
       const noteId = getNoteId();
@@ -130,7 +129,7 @@ export default function NotesEditor({ note, isNew = false, readOnly = false }: N
       const noteResult = savedNote.data || savedNote;
 
       if (isNew) {
-        const newNoteId = noteResult._id || noteResult.id;
+        const newNoteId = noteResult.id;
         if (newNoteId) {
           showToast.success("Note created successfully");
           router.replace(`/notes/${newNoteId}`);

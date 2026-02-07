@@ -41,7 +41,7 @@ export async function POST(request: Request) {
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() }
+      where: { email: email.toLowerCase() }
     });
 
     if (existingUser) {
@@ -56,31 +56,28 @@ export async function POST(request: Request) {
 
     // Create a new user
     const user = await prisma.user.create({
-        data: {
-            name,
-            email: email.toLowerCase(),
-            password: hashedPassword,
-            // authProviders: ['credentials'], // Not in Prisma schema explicitly, handled by logic
-            // isVerified: false, // Not in schema, schema has emailVerified (DateTime)
-            // lastLogin: new Date() // Not in schema
-        }
+      data: {
+        name,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+      },
     });
 
     // Return the user without the password
     return NextResponse.json(
-      { 
+      {
         message: 'User registered successfully',
         user: {
           id: user.id,
           name: user.name,
-          email: user.email
-        } 
+          email: user.email,
+        },
       },
       { status: 201 }
     );
   } catch (error: any) {
     console.error('Registration error:', error);
-    
+
     return NextResponse.json(
       { error: 'An error occurred while registering', code: 'server_error' },
       { status: 500 }

@@ -15,14 +15,11 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        // Aggregate to count notes per folder
         const folderCounts = await prisma.note.groupBy({
             by: ['folder'],
+            where: { userId: session.user.id },
             _count: {
                 _all: true
-            },
-            where: {
-                userId: session.user.id
             }
         });
 

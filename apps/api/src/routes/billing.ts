@@ -1,34 +1,60 @@
 import { Router } from 'express';
 import express from 'express';
-import { StripeService } from '../modules/billing/stripe';
-import { handleStripeWebhook } from '../modules/billing/webhook';
+import { handleWebhook } from '../modules/billing/webhook';
+import { BillingService } from '../modules/billing/service';
+import { authenticateJWT } from '../modules/auth/middleware';
+import { asyncHandler } from '../common/middleware';
 
 const router = Router();
-const stripeService = new StripeService();
+const billingService = new BillingService();
 
-router.post('/checkout', async (req, res) => {
-    try {
-        const { priceId, customerId } = req.body;
-        const subscription = await stripeService.createSubscription(customerId, priceId);
-        res.json(subscription);
-    } catch (e: any) {
-        res.status(500).json({ error: e.message });
-    }
-});
+/**
+ * Stripe Webhook
+ * Must use express.raw for signature verification
+ */
+router.post(
+  '/webhook',
+  express.raw({ type: 'application/json' }),
+  handleWebhook
+);
 
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    if (typeof sig !== 'string') {
-        res.status(400).send('Webhook Error: Missing signature');
-        return;
-    }
+/**
+ * Create Checkout Session
+ */
+router.post(
+  '/checkout',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { organizationId, priceId } = req.body;
+    const userId = (req as any).user.id;
 
-    try {
-        await handleStripeWebhook(req.body, sig);
-        res.json({ received: true });
-    } catch (err: any) {
-        res.status(400).send(`Webhook Error: ${err.message}`);
-    }
-});
+    const result = await billingService.createCheckoutSession(
+      userId,
+      organizationId,
+      priceId
+    );
+
+    res.json(result);
+  })
+);
+
+/**
+ * Customer Billing Portal
+ */
+router.post(
+  '/portal',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const { organizationId } = req.body;
+    const userId = (req as any).user.id;
+
+    const result = await billingService.createPortalSession(
+      userId,
+      organizationId
+    );
+
+    res.json(result);
+  })
+);
 
 export default router;
