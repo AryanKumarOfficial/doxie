@@ -83,6 +83,9 @@ importers:
       morgan:
         specifier: ^1.10.0
         version: 1.10.1
+      next-auth:
+        specifier: ^4.24.11
+        version: 4.24.11(next@15.3.1(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       stripe:
         specifier: ^20.3.0
         version: 20.3.0(@types/node@20.17.30)
@@ -120,9 +123,6 @@ importers:
 
   apps/web:
     dependencies:
-      '@auth/mongodb-adapter':
-        specifier: ^3.9.0
-        version: 3.9.0(mongodb@6.16.0)
       '@doxie/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -168,12 +168,6 @@ importers:
       immer:
         specifier: ^10.1.1
         version: 10.1.1
-      mongodb:
-        specifier: ^6.16.0
-        version: 6.16.0
-      mongoose:
-        specifier: ^8.13.2
-        version: 8.13.2
       next:
         specifier: 15.3.1
         version: 15.3.1(@opentelemetry/api@1.9.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -306,25 +300,6 @@ packages:
   '@alloc/quick-lru@5.2.0':
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
-
-  '@auth/core@0.39.0':
-    resolution: {integrity: sha512-jusviw/sUSfAh6S/wjY5tRmJOq0Itd3ImF+c/b4HB9DfmfChtcfVJTNJeqCeExeCG8oh4PBKRsMQJsn2W6NhFQ==}
-    peerDependencies:
-      '@simplewebauthn/browser': ^9.0.1
-      '@simplewebauthn/server': ^9.0.2
-      nodemailer: ^6.8.0
-    peerDependenciesMeta:
-      '@simplewebauthn/browser':
-        optional: true
-      '@simplewebauthn/server':
-        optional: true
-      nodemailer:
-        optional: true
-
-  '@auth/mongodb-adapter@3.9.0':
-    resolution: {integrity: sha512-H9SVjBjUWDmlNczQ8o4KBcNY7JiKM3sl0i52PgYD6MK5PZp4yLGrc7J15+7OwMYcxWqElumrZppbH4QDc3wIeA==}
-    peerDependencies:
-      mongodb: ^6
 
   '@babel/runtime@7.27.0':
     resolution: {integrity: sha512-VtPOkrdPHZsKc/clNqyi9WUA8TINkZ4cGk63UUE3u4pmB2k+ZMQRDuIOagv8UVd6j7k0T3+RRIb7beKTebNbcw==}
@@ -1122,12 +1097,6 @@ packages:
   '@types/validator@13.15.1':
     resolution: {integrity: sha512-9gG6ogYcoI2mCMLdcO0NYI0AYrbxIjv0MDmy/5Ywo6CpWWrqYayc+mmgxRsCgtcGJm9BSbXkMsmxGah1iGHAAQ==}
 
-  '@types/webidl-conversions@7.0.3':
-    resolution: {integrity: sha512-CiJJvcRtIgzadHCYXw7dqEnMNRjhGZlYK05Mj9OyktqV8uVT8fD2BFOB7S1uwBE3Kj2Z+4UyPmFw/Ixgw/LAlA==}
-
-  '@types/whatwg-url@11.0.5':
-    resolution: {integrity: sha512-coYR071JRaHa+xoEvvYqvnIHaVqaYrLPbsufM9BF63HkwI5Lgmy2QR8Q5K/lYDYo5AK82wOvSOS0UsLTpTG7uQ==}
-
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
 
@@ -1607,9 +1576,6 @@ packages:
   jose@4.15.9:
     resolution: {integrity: sha512-1vUQX+IdDMVPj4k8kOxgUqlcK518yluMuGZwqlr44FS1ppZB/5GWh4rZG89erpOBOJjU/OBsnCVFfapsRz6nEA==}
 
-  jose@6.0.10:
-    resolution: {integrity: sha512-skIAxZqcMkOrSwjJvplIPYrlXGpxTPnro2/QWTDCxAdWQrSTV5/KqspMWmi5WAx5+ULswASJiZ0a+1B/Lxt9cw==}
-
   json-schema@0.4.0:
     resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
 
@@ -1779,9 +1745,6 @@ packages:
     resolution: {integrity: sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==}
     engines: {node: '>= 0.6'}
 
-  memory-pager@1.5.0:
-    resolution: {integrity: sha512-ZS4Bp4r/Zoeq6+NLJpP+0Zzm0pR8whtGPf1XExKLJBAczGMnSi3It14OiNCStjQjM6NU1okjQGSxgEZN8eBYKg==}
-
   merge-descriptors@1.0.3:
     resolution: {integrity: sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==}
 
@@ -1876,67 +1839,6 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
-  mongodb-connection-string-url@3.0.2:
-    resolution: {integrity: sha512-rMO7CGo/9BFwyZABcKAWL8UJwH/Kc2x0g72uhDWzG48URRax5TCIcJ7Rc3RZqffZzO/Gwff/jyKwCU9TN8gehA==}
-
-  mongodb@6.15.0:
-    resolution: {integrity: sha512-ifBhQ0rRzHDzqp9jAQP6OwHSH7dbYIQjD3SbJs9YYk9AikKEettW/9s/tbSFDTpXcRbF+u1aLrhHxDFaYtZpFQ==}
-    engines: {node: '>=16.20.1'}
-    peerDependencies:
-      '@aws-sdk/credential-providers': ^3.188.0
-      '@mongodb-js/zstd': ^1.1.0 || ^2.0.0
-      gcp-metadata: ^5.2.0
-      kerberos: ^2.0.1
-      mongodb-client-encryption: '>=6.0.0 <7'
-      snappy: ^7.2.2
-      socks: ^2.7.1
-    peerDependenciesMeta:
-      '@aws-sdk/credential-providers':
-        optional: true
-      '@mongodb-js/zstd':
-        optional: true
-      gcp-metadata:
-        optional: true
-      kerberos:
-        optional: true
-      mongodb-client-encryption:
-        optional: true
-      snappy:
-        optional: true
-      socks:
-        optional: true
-
-  mongodb@6.16.0:
-    resolution: {integrity: sha512-D1PNcdT0y4Grhou5Zi/qgipZOYeWrhLEpk33n3nm6LGtz61jvO88WlrWCK/bigMjpnOdAUKKQwsGIl0NtWMyYw==}
-    engines: {node: '>=16.20.1'}
-    peerDependencies:
-      '@aws-sdk/credential-providers': ^3.188.0
-      '@mongodb-js/zstd': ^1.1.0 || ^2.0.0
-      gcp-metadata: ^5.2.0
-      kerberos: ^2.0.1
-      mongodb-client-encryption: '>=6.0.0 <7'
-      snappy: ^7.2.2
-      socks: ^2.7.1
-    peerDependenciesMeta:
-      '@aws-sdk/credential-providers':
-        optional: true
-      '@mongodb-js/zstd':
-        optional: true
-      gcp-metadata:
-        optional: true
-      kerberos:
-        optional: true
-      mongodb-client-encryption:
-        optional: true
-      snappy:
-        optional: true
-      socks:
-        optional: true
-
-  mongoose@8.13.2:
-    resolution: {integrity: sha512-riCBqZmNkYBWjXpM3qWLDQw7QmTKsVZDPhLXFJqC87+OjocEVpvS3dA2BPPUiLAu+m0/QmEj5pSXKhH+/DgerQ==}
-    engines: {node: '>=16.20.1'}
-
   morgan@1.10.1:
     resolution: {integrity: sha512-223dMRJtI/l25dJKWpgij2cMtywuG/WiUKXdvwfbhGKBhy1puASqXwFzmWZ7+K73vUPoR7SS2Qz2cI/g9MKw0A==}
     engines: {node: '>= 0.8.0'}
@@ -1946,14 +1848,6 @@ packages:
 
   motion-utils@12.8.3:
     resolution: {integrity: sha512-GYVauZEbca8/zOhEiYOY9/uJeedYQld6co/GJFKOy//0c/4lDqk0zB549sBYqqV2iMuX+uHrY1E5zd8A2L+1Lw==}
-
-  mpath@0.9.0:
-    resolution: {integrity: sha512-ikJRQTk8hw5DEoFVxHG1Gn9T/xcjtdnOKIU1JTmGjZZlg9LST2mBLmcX3/ICIbgJydT2GOc15RnNy5mHmzfSew==}
-    engines: {node: '>=4.0.0'}
-
-  mquery@5.0.0:
-    resolution: {integrity: sha512-iQMncpmEK8R8ncT8HJGsGc9Dsp8xcgYMVSbs5jgnm1lFHTZqMJTUWTDx1LBO8+mK3tPNZWFLBghQEIOULSTHZg==}
-    engines: {node: '>=14.0.0'}
 
   ms@2.0.0:
     resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
@@ -2023,9 +1917,6 @@ packages:
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
-
-  oauth4webapi@3.5.0:
-    resolution: {integrity: sha512-DF3mLWNuxPkxJkHmWxbSFz4aE5CjWOsm465VBfBdWzmzX4Mg3vF8icxK+iKqfdWrIumBJ2TaoNQWx+SQc2bsPQ==}
 
   oauth@0.9.15:
     resolution: {integrity: sha512-a5ERWK1kh38ExDEfoO6qUHJb32rd7aYmPHuyCu3Fta/cnICvYmgd2uhuKXvPD+PXB+gCEYYEaQdIRAjCOwAKNA==}
@@ -2104,14 +1995,6 @@ packages:
     peerDependencies:
       preact: '>=10'
 
-  preact-render-to-string@6.5.11:
-    resolution: {integrity: sha512-ubnauqoGczeGISiOh6RjX0/cdaF8v/oDXIjO85XALCQjwQP+SB4RDXXtvZ6yTYSjG+PC1QRP2AhPgCEsM2EvUw==}
-    peerDependencies:
-      preact: '>=10'
-
-  preact@10.24.3:
-    resolution: {integrity: sha512-Z2dPnBnMUfyQfSQ+GBdsGa16hz35YmLmtTLhM169uW944hYL6xzTYkJjC07j+Wosz733pMWx0fgON3JNw1jJQA==}
-
   preact@10.26.5:
     resolution: {integrity: sha512-fmpDkgfGU6JYux9teDWLhj9mKN55tyepwYbxHgQuIxbWQzgFg5vk7Mrrtfx7xRxq798ynkY4DDDxZr235Kk+4w==}
 
@@ -2129,10 +2012,6 @@ packages:
   proxy-addr@2.0.7:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
     engines: {node: '>= 0.10'}
-
-  punycode@2.3.1:
-    resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
-    engines: {node: '>=6'}
 
   qs@6.14.1:
     resolution: {integrity: sha512-4EK3+xJl8Ts67nLYNwqw/dsFVnCf+qR7RgXSK9jEEm9unao3njwMDdmsdvoKBKHzxd7tCYz5e5M+SnMjdtXGQQ==}
@@ -2319,9 +2198,6 @@ packages:
     resolution: {integrity: sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw==}
     engines: {node: '>= 0.4'}
 
-  sift@17.1.3:
-    resolution: {integrity: sha512-Rtlj66/b0ICeFzYTuNvX/EF1igRbbnGSvEyT79McoZa/DeGhMyC5pWKOEsZKnpkqtSeovd5FL/bjHWC3CIIvCQ==}
-
   simple-swizzle@0.2.2:
     resolution: {integrity: sha512-JA//kQgZtbuY83m+xT+tXJkmJncGMTFT+C+g2h2R9uxkYIrE2yy9sgmcLhCnw57/WSD+Eh3J97FPEDFnbXnDUg==}
 
@@ -2418,10 +2294,6 @@ packages:
   toidentifier@1.0.1:
     resolution: {integrity: sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==}
     engines: {node: '>=0.6'}
-
-  tr46@5.1.1:
-    resolution: {integrity: sha512-hdF5ZgjTqgAntKkklYw0R03MG2x/bSzTtkxmIRw/sTNV8YXsCJ1tfLAX23lhxhHJlEf3CRCOCGGWw3vI3GaSPw==}
-    engines: {node: '>=18'}
 
   tree-kill@1.2.2:
     resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
@@ -2555,14 +2427,6 @@ packages:
   vfile@6.0.3:
     resolution: {integrity: sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q==}
 
-  webidl-conversions@7.0.0:
-    resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
-    engines: {node: '>=12'}
-
-  whatwg-url@14.2.0:
-    resolution: {integrity: sha512-De72GdQZzNTUBBChsXueQUnPKDkg/5A5zp7pFDuQAj5UFoENpiACU0wlCvzpAGnTkj++ihpKwKyYewn/XNUbKw==}
-    engines: {node: '>=18'}
-
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
@@ -2640,23 +2504,6 @@ snapshots:
       json-schema: 0.4.0
 
   '@alloc/quick-lru@5.2.0': {}
-
-  '@auth/core@0.39.0':
-    dependencies:
-      '@panva/hkdf': 1.2.1
-      jose: 6.0.10
-      oauth4webapi: 3.5.0
-      preact: 10.24.3
-      preact-render-to-string: 6.5.11(preact@10.24.3)
-
-  '@auth/mongodb-adapter@3.9.0(mongodb@6.16.0)':
-    dependencies:
-      '@auth/core': 0.39.0
-      mongodb: 6.16.0
-    transitivePeerDependencies:
-      - '@simplewebauthn/browser'
-      - '@simplewebauthn/server'
-      - nodemailer
 
   '@babel/runtime@7.27.0':
     dependencies:
@@ -3343,12 +3190,6 @@ snapshots:
 
   '@types/validator@13.15.1': {}
 
-  '@types/webidl-conversions@7.0.3': {}
-
-  '@types/whatwg-url@11.0.5':
-    dependencies:
-      '@types/webidl-conversions': 7.0.3
-
   '@ungap/structured-clone@1.3.0': {}
 
   '@vercel/oidc@3.1.0': {}
@@ -3848,8 +3689,6 @@ snapshots:
 
   jose@4.15.9: {}
 
-  jose@6.0.10: {}
-
   json-schema@0.4.0: {}
 
   jsonwebtoken@9.0.3:
@@ -4054,8 +3893,6 @@ snapshots:
 
   media-typer@0.3.0: {}
 
-  memory-pager@1.5.0: {}
-
   merge-descriptors@1.0.3: {}
 
   methods@1.1.2: {}
@@ -4209,42 +4046,6 @@ snapshots:
 
   mkdirp@1.0.4: {}
 
-  mongodb-connection-string-url@3.0.2:
-    dependencies:
-      '@types/whatwg-url': 11.0.5
-      whatwg-url: 14.2.0
-
-  mongodb@6.15.0:
-    dependencies:
-      '@mongodb-js/saslprep': 1.2.2
-      bson: 6.10.3
-      mongodb-connection-string-url: 3.0.2
-
-  mongodb@6.16.0:
-    dependencies:
-      '@mongodb-js/saslprep': 1.2.2
-      bson: 6.10.3
-      mongodb-connection-string-url: 3.0.2
-
-  mongoose@8.13.2:
-    dependencies:
-      bson: 6.10.3
-      kareem: 2.6.3
-      mongodb: 6.15.0
-      mpath: 0.9.0
-      mquery: 5.0.0
-      ms: 2.1.3
-      sift: 17.1.3
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-providers'
-      - '@mongodb-js/zstd'
-      - gcp-metadata
-      - kerberos
-      - mongodb-client-encryption
-      - snappy
-      - socks
-      - supports-color
-
   morgan@1.10.1:
     dependencies:
       basic-auth: 2.0.1
@@ -4260,14 +4061,6 @@ snapshots:
       motion-utils: 12.8.3
 
   motion-utils@12.8.3: {}
-
-  mpath@0.9.0: {}
-
-  mquery@5.0.0:
-    dependencies:
-      debug: 4.4.0
-    transitivePeerDependencies:
-      - supports-color
 
   ms@2.0.0: {}
 
@@ -4343,8 +4136,6 @@ snapshots:
 
   normalize-path@3.0.0: {}
 
-  oauth4webapi@3.5.0: {}
-
   oauth@0.9.15: {}
 
   object-assign@4.1.1: {}
@@ -4417,12 +4208,6 @@ snapshots:
       preact: 10.26.5
       pretty-format: 3.8.0
 
-  preact-render-to-string@6.5.11(preact@10.24.3):
-    dependencies:
-      preact: 10.24.3
-
-  preact@10.24.3: {}
-
   preact@10.26.5: {}
 
   pretty-format@3.8.0: {}
@@ -4439,8 +4224,6 @@ snapshots:
     dependencies:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
-
-  punycode@2.3.1: {}
 
   qs@6.14.1:
     dependencies:
@@ -4689,8 +4472,6 @@ snapshots:
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
 
-  sift@17.1.3: {}
-
   simple-swizzle@0.2.2:
     dependencies:
       is-arrayish: 0.3.2
@@ -4760,10 +4541,6 @@ snapshots:
       is-number: 7.0.0
 
   toidentifier@1.0.1: {}
-
-  tr46@5.1.1:
-    dependencies:
-      punycode: 2.3.1
 
   tree-kill@1.2.2: {}
 
@@ -4902,13 +4679,6 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
       vfile-message: 4.0.2
-
-  webidl-conversions@7.0.0: {}
-
-  whatwg-url@14.2.0:
-    dependencies:
-      tr46: 5.1.1
-      webidl-conversions: 7.0.0
 
   wrappy@1.0.2: {}
 
