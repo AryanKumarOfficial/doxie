@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import connectToDatabase from '@/lib/mongodb';
-import User from '@/models/User';
+import { prisma } from '@doxie/db';
+import { hash } from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
@@ -39,11 +39,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Connect to the database
-    await connectToDatabase();
-
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    });
+
     if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists', code: 'email_exists' },
@@ -51,25 +51,24 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create a new user
-    const user = new User({
-      name,
-      email: email.toLowerCase(),
-      password, // Will be hashed by the pre-save hook
-      authProviders: ['credentials'],
-      isVerified: false,
-      lastLogin: new Date()
-    });
+    // Hash password
+    const hashedPassword = await hash(password, 12);
 
-    // Save the user to the database
-    await user.save();
+    // Create a new user
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+      }
+    });
 
     // Return the user without the password
     return NextResponse.json(
       { 
         message: 'User registered successfully',
         user: {
-          id: user._id.toString(),
+          id: user.id,
           name: user.name,
           email: user.email
         } 
@@ -78,19 +77,6 @@ export async function POST(request: Request) {
     );
   } catch (error: any) {
     console.error('Registration error:', error);
-    
-    // Handle mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const validationErrors = Object.values(error.errors).map((err: any) => err.message);
-      return NextResponse.json(
-        { 
-          error: 'Validation failed', 
-          details: validationErrors.join(', '),
-          code: 'validation_error'
-        },
-        { status: 400 }
-      );
-    }
     
     return NextResponse.json(
       { error: 'An error occurred while registering', code: 'server_error' },

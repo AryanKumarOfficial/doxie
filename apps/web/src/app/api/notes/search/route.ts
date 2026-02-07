@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import connectToDatabase from "@/lib/mongodb";
-import Note from "@/models/Note";
+import { prisma, Prisma } from "@doxie/db";
 
 export async function GET(req: NextRequest) {
     try {
@@ -24,71 +23,68 @@ export async function GET(req: NextRequest) {
         const isFavorite = url.searchParams.get("isFavorite") === "true" ? true : undefined;
         const isPinned = url.searchParams.get("isPinned") === "true" ? true : undefined;
         const isPublic = url.searchParams.get("isPublic") === "true" ? true : undefined;
-        const hasShares = url.searchParams.get("hasShares") === "true";
         const limit = url.searchParams.get("limit") ? parseInt(url.searchParams.get("limit")!) : 20;
         const skip = url.searchParams.get("skip") ? parseInt(url.searchParams.get("skip")!) : 0;
-        const sort = url.searchParams.get("sort") || "-updatedAt"; // Default sort by updatedAt desc
+        const sortParam = url.searchParams.get("sort") || "-updatedAt";
 
-        await connectToDatabase();
+        const sortField = sortParam.startsWith("-") ? sortParam.substring(1) : sortParam;
+        const sortOrder: Prisma.SortOrder = sortParam.startsWith("-") ? "desc" : "asc";
+        const orderBy: Prisma.NoteOrderByWithRelationInput = { [sortField]: sortOrder };
 
-        // If we only need to return tags, get distinct tags for the user
         if (tagsOnly) {
-            const tags = await Note.distinct("tags", { 
-                userId: session.user.id,
-                tags: { $exists: true, $ne: [] }
+            // Get all tags and dedup
+            const notes = await prisma.note.findMany({
+                where: { userId: session.user.id },
+                select: { tags: true }
             });
-            
+            const allTags = notes.flatMap(n => n.tags);
+            const tags = Array.from(new Set(allTags));
             return NextResponse.json({ tags });
         }
 
-        // Build the search query
-        const searchQuery: any = { userId: session.user.id };
+        // Build where clause
+        const where: Prisma.NoteWhereInput = { userId: session.user.id };
 
-        // Add filter conditions based on parameters
         if (query) {
-            searchQuery.$or = [
-                { title: { $regex: query, $options: 'i' } },
-                { content: { $regex: query, $options: 'i' } },
-                { tags: { $regex: query, $options: 'i' } }
+            where.OR = [
+                { title: { contains: query, mode: 'insensitive' } },
+                { content: { contains: query, mode: 'insensitive' } },
             ];
         }
 
         if (tag) {
-            searchQuery.tags = tag;
+            where.tags = { has: tag };
         }
 
         if (folder) {
-            searchQuery.folder = folder;
+            where.folder = folder;
         }
 
         if (editorType) {
-            searchQuery.editorType = editorType;
+            where.editorType = editorType;
         }
 
         if (isFavorite !== undefined) {
-            searchQuery.isFavorite = isFavorite;
+            where.isFavorite = isFavorite;
         }
 
         if (isPinned !== undefined) {
-            searchQuery.isPinned = isPinned;
+            where.isPinned = isPinned;
         }
 
         if (isPublic !== undefined) {
-            searchQuery.isPublic = isPublic;
+            where.isPublic = isPublic;
         }
 
-        if (hasShares) {
-            searchQuery.sharedWith = { $exists: true, $ne: [] };
-        }
-
-        // Execute the search
-        const notes = await Note.find(searchQuery)
-            .sort(sort)
-            .skip(skip)
-            .limit(limit)
-            .lean();
-
-        const total = await Note.countDocuments(searchQuery);
+        const [notes, total] = await Promise.all([
+            prisma.note.findMany({
+                where,
+                orderBy,
+                take: limit,
+                skip
+            }),
+            prisma.note.count({ where })
+        ]);
 
         return NextResponse.json({
             notes,

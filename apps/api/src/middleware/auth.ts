@@ -15,22 +15,22 @@ declare global {
   }
 }
 
-export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+export async function isAuthenticated(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
-    // If the request comes from another internal service (like a webhook or admin task),
-    // we might want a different auth mechanism (like a secret key).
-    // For now, we focus on user session.
-
     const token = await getToken({
       req: req as any,
-      secret: process.env.NEXTAUTH_SECRET
+      secret: process.env.NEXTAUTH_SECRET,
     });
 
     if (!token || !token.id) {
-       res.status(401).json({ error: 'Unauthorized' });
-       return;
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    // Attach normalized user object
     req.user = {
       id: token.id as string,
       email: token.email as string | undefined,
@@ -38,9 +38,9 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
       image: token.picture as string | undefined,
     };
 
-    next();
+    return next();
   } catch (error) {
     console.error('Auth Middleware Error:', error);
-    res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
-};
+}
